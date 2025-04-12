@@ -21,6 +21,8 @@ impl PeaksDetector {
         }
     }
 
+    /// Detects peaks in the signal using a z-score method. This method is also how the primary way to insert data into our rolling
+    /// window, regardless of whether it is a peak or not
     pub fn z_score_signal(&mut self, value: f64) -> Option<Peak> {
         // If the window is not full, we just push the value and return None as it is clear there
         // is no complete window to analyze for peaks
@@ -56,6 +58,7 @@ impl PeaksDetector {
         }
     }
 
+    /// Returns the mean and standard deviation of the values in the window
     pub fn stats(&self) -> Option<(f64, f64)> {
         if self.window.is_empty() {
             None
