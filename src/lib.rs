@@ -15,27 +15,39 @@ impl PeaksDetector {
         PeaksDetector {
             threshold,
             influence,
+            // The window is initialized with a capacity of lag since it is meant to contain
+            // lookback values/rolling window data
             window: Vec::with_capacity(lag),
         }
     }
 
-    pub fn signal(&mut self, value: f64) -> Option<Peak> {
+    pub fn z_score_signal(&mut self, value: f64) -> Option<Peak> {
+        // If the window is not full, we just push the value and return None as it is clear there
+        // is no complete window to analyze for peaks
         if self.window.len() < self.window.capacity() {
             self.window.push(value);
 
             None
+        // If the window is full, we check if the new value is a peak. We check if the last value exists, and that the mean_stats
+        // can be calculated. If so, we pop the first value in the window to make space for the new value, check if the new value
+        // is a peak, and push the new value to the window. Finally, we return the peak if it exists.
         } else if let (Some((mean, stddev)), Some(&window_last)) =
             (self.stats(), self.window.last())
         {
+            // We pop the first value in the window to make space for the new value
             self.window.remove(0);
 
             if (value - mean).abs() > (self.threshold * stddev) {
+                // When we detect that a peak exists, we apply the influence factor to the new value so as to not
+                // overreact to the new value. This is done by applying a weighted average to the new value and the
+                // last value in the window
                 let next_value = (value * self.influence) + ((1. - self.influence) * window_last);
 
                 self.window.push(next_value);
 
                 Some(if value > mean { Peak::High } else { Peak::Low })
             } else {
+                // If the new value is not a peak, we just push it to the window and return None
                 self.window.push(value);
                 None
             }
@@ -51,7 +63,6 @@ impl PeaksDetector {
             let window_len = self.window.len() as f64;
 
             let mean = self.window.iter().fold(0., |a, v| a + v) / window_len;
-
             let sq_sum = self
                 .window
                 .iter()
@@ -105,7 +116,7 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         while let Some(item) = self.source.next() {
             let value = (self.signal)(&item);
-            if let Some(peak) = self.detector.signal(value) {
+            if let Some(peak) = self.detector.z_score_signal(value) {
                 return Some((item, peak));
             }
         }
