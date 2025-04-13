@@ -10,3 +10,5 @@ authors = ["Jean-Paul", "Alexey Voznyuk <me@swizard.info>"]
 license = "MIT"
 
 [dependencies]
+serde = "1.0.219"
+rust_decimal = { version = "1.37.1", features = ["maths"] }
