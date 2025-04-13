@@ -16,6 +16,11 @@ pub struct PeaksDetector {
 
 impl PeaksDetector {
     pub fn new(lag: usize, threshold: Decimal, influence: Decimal) -> PeaksDetector {
+        assert!(
+            influence >= Decimal::ZERO && influence <= Decimal::ONE,
+            "Influence must be between 0 and 1"
+        );
+
         PeaksDetector {
             threshold,
             influence,
@@ -82,12 +87,9 @@ impl PeaksDetector {
                 .sum::<Decimal>();
 
             let variance = sq_sum / window_len; // variance is the average of the squared differences
-            let stddev = variance.sqrt(); // standard deviation is the square root of the variance
+            let stddev = variance.sqrt().unwrap(); // standard deviation is the square root of the variance
 
-            match stddev {
-                Some(val) => Some((mean, val)),
-                None => None,
-            }
+            Some((mean, stddev))
         }
     }
 }
