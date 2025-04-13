@@ -48,7 +48,8 @@ impl PeaksDetector {
                 // When we detect that a peak exists, we apply the influence factor to the new value so as to not
                 // overreact to the new value. This is done by applying a weighted average to the new value and the
                 // last value in the window
-                let next_value = (value * self.influence) + ((1. - self.influence) * window_last);
+                let next_value =
+                    (value * self.influence) + ((Decimal::ONE - self.influence) * window_last);
 
                 self.window.push(next_value);
 
@@ -70,13 +71,18 @@ impl PeaksDetector {
         } else {
             let window_len = Decimal::from(self.window.len() as u32);
 
-            let mean = self.window.iter().fold(Decimal::ZERO, |a, v| a + v) / window_len;
+            let sum = self.window.iter().sum::<Decimal>();
+            let mean = sum / window_len; // mean is the average of the values in the window
+
+            // Calculate squared differences
             let sq_sum = self
                 .window
                 .iter()
-                .fold(Decimal::ZERO, |a, v| a + ((v - mean) * (v - mean)));
+                .map(|v| (v - &mean).powu(2)) // powu for u32 exponent
+                .sum::<Decimal>();
 
-            let stddev = (sq_sum / window_len).sqrt();
+            let variance = sq_sum / window_len; // variance is the average of the squared differences
+            let stddev = variance.sqrt(); // standard deviation is the square root of the variance
 
             match stddev {
                 Some(val) => Some((mean, val)),

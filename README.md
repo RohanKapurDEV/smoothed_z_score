@@ -1,3 +1,8 @@
+```
+This fork uses the rust_decimal::Decimal type instead of f64, which is better suited for financial calculations. The core logic
+of the original implementation remains unchanged.
+```
+
 # Smoothed z-score peaks detector
 
 ## Description
