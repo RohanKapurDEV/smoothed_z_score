@@ -143,6 +143,58 @@ where
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Test the stats function implementation
+    #[test]
+    fn test_stats() {
+        let mut detector = PeaksDetector::new(3, dec!(2.0), dec!(0.5));
+        detector.window = vec![dec!(1.0), dec!(2.0), dec!(3.0)];
+
+        let (mean, stddev) = detector.stats().unwrap();
+        assert_eq!(mean, dec!(2.0));
+        // Variance = (1 + 0 + 1)/3 = 0.666..., so sqrt(0.666) ≈ 0.816
+        assert!((stddev - dec!(0.816496580927726)).abs() < dec!(0.0001));
+    }
+
+    /// Test the z_score_signal function implementation (without influence adjustment)
+    #[test]
+    fn test_high_peak_detection_without_influence() {
+        let lag = 3;
+        let threshold = dec!(2.0);
+        let influence = dec!(0.0); // No influence adjustment
+
+        let mut detector = PeaksDetector::new(lag, threshold, influence);
+        detector.window = vec![dec!(1.0), dec!(2.0), dec!(3.0)];
+
+        // New value is a peak
+        let new_value = dec!(6.0);
+        let result = detector.z_score_signal(new_value);
+
+        assert_eq!(result, Some(Peak::High));
+        assert_eq!(detector.window.len(), lag);
+    }
+
+    /// Test the z_score_signal function implementation (with influence adjustment!)
+    #[test]
+    fn test_high_peak_detection_with_influence() {
+        let lag = 3;
+        let threshold = dec!(2.5);
+        let influence = dec!(0.5); // 50% influence
+
+        let mut detector = PeaksDetector::new(lag, threshold, influence);
+        detector.window = vec![dec!(1.0), dec!(2.0), dec!(3.0)];
+
+        let new_value = dec!(100.0); // Extreme value (peak detected)
+        let _result = detector.z_score_signal(new_value);
+
+        // Adjusted value should be (100 * 0.5) + (3 * 0.5) = 51.5
+        assert_eq!(detector.window.last().copied(), Some(dec!(51.5)));
+    }
+}
+
 // #[cfg(test)]
 // mod tests {
 //     use super::{Peak, PeaksDetector, PeaksFilter};

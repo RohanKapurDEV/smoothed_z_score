@@ -11,4 +11,4 @@ license = "MIT"
 
 [dependencies]
 serde = "1.0.219"
-rust_decimal = { version = "1.37.1", features = ["maths"] }
+rust_decimal = { version = "1.37.1", features = ["maths", "macros"] }
